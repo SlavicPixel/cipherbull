@@ -35,7 +35,9 @@ class DatabaseHelper {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         title TEXT,
         username TEXT,
-        password TEXT
+        password TEXT,
+        url TEXT,
+        notes TEXT
       )
     ''');
   }
