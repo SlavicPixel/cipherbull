@@ -5,6 +5,7 @@ import 'package:cipherbull/models/entry.dart';
 import 'package:cipherbull/services/secure_storage_helper.dart';
 import 'package:cipherbull/screens/add_entry_screen.dart';
 import 'package:cipherbull/screens/login_screen.dart';
+import 'package:cipherbull/screens/entry_view_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -92,6 +93,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // Three-dot menu in the AppBar
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -120,6 +122,24 @@ class _HomeScreenState extends State<HomeScreen> {
           return ListTile(
             title: Text(password.title),
             subtitle: Text(password.username),
+            onTap: () {
+              // Navigate to the EntryViewScreen when tapped
+              Navigator.of(context)
+                  .push(
+                MaterialPageRoute(
+                  builder: (context) => EntryViewScreen(
+                    entry: password, // Pass the selected entry
+                    dbHelper:
+                        _databaseHelper!, // Pass the database helper for delete/edit actions
+                  ),
+                ),
+              )
+                  .then((value) {
+                setState(() {
+                  _loadPasswords();
+                });
+              });
+            },
             trailing: IconButton(
               icon: const Icon(Icons.delete),
               onPressed: () {
