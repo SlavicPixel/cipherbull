@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:cipherbull/services/secure_storage_helper.dart';
 import 'package:cipherbull/screens/home_screen.dart';
-import 'package:cipherbull/services/database_helper.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
