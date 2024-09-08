@@ -1,4 +1,3 @@
-// lib/screens/home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:cipherbull/services/database_helper.dart';
 import 'package:cipherbull/models/entry.dart';
@@ -6,6 +5,7 @@ import 'package:cipherbull/services/secure_storage_helper.dart';
 import 'package:cipherbull/screens/add_entry_screen.dart';
 import 'package:cipherbull/screens/login_screen.dart';
 import 'package:cipherbull/screens/entry_view_screen.dart';
+import 'package:cipherbull/screens/password_generator_screen.dart'; // Import the Password Generator Screen
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -17,12 +17,14 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   List<Entry> _passwords = [];
   final SecureStorageService _secureStorageService = SecureStorageService();
-  DatabaseHelper? _databaseHelper; // Declare _databaseHelper globally
+  DatabaseHelper? _databaseHelper;
+
+  int _selectedIndex = 0;
 
   @override
   void initState() {
     super.initState();
-    _initializeDatabaseHelper(); // Initialize _databaseHelper in initState
+    _initializeDatabaseHelper();
   }
 
   // Initialize the DatabaseHelper globally
@@ -32,9 +34,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (dbName != null && dbPassword != null) {
       _databaseHelper = DatabaseHelper(dbName: dbName, dbPassword: dbPassword);
-      await _loadPasswords(); // Load passwords after initializing the database
+      await _loadPasswords();
     } else {
-      // Handle case where dbName or dbPassword is null (e.g., logout)
       _showErrorDialog('Database credentials not found. Please log in again.');
     }
   }
@@ -51,7 +52,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _deletePassword(int id) async {
     if (_databaseHelper != null) {
       await _databaseHelper!.deleteEntry(id);
-      _loadPasswords(); // Reload passwords after deletion
+      _loadPasswords();
     }
   }
 
@@ -59,21 +60,16 @@ class _HomeScreenState extends State<HomeScreen> {
     Navigator.of(context)
         .push(
           MaterialPageRoute(
-            builder: (context) => AddEntryScreen(
-                dbHelper: _databaseHelper!), // Pass the dbHelper instance
+            builder: (context) => AddEntryScreen(dbHelper: _databaseHelper!),
           ),
         )
-        .then(
-            (_) => _loadPasswords()); // Reload passwords after adding a new one
+        .then((_) => _loadPasswords());
   }
 
   Future<void> _logout() async {
-    await _secureStorageService
-        .clearCredentials(); // Clear credentials from secure storage
+    await _secureStorageService.clearCredentials();
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-          builder: (context) =>
-              LoginScreen()), // Redirect to login screen after logout
+      MaterialPageRoute(builder: (context) => LoginScreen()),
     );
   }
 
@@ -93,29 +89,9 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Three-dot menu in the AppBar
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('CipherBull'),
-        actions: <Widget>[
-          PopupMenuButton<String>(
-            onSelected: (String result) {
-              if (result == 'Logout') {
-                _logout(); // Call logout if the user selects Logout
-              }
-            },
-            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-              const PopupMenuItem<String>(
-                value: 'Logout',
-                child: Text('Logout'),
-              ),
-            ],
-          ),
-        ],
-      ),
-      body: ListView.builder(
+  Widget _getSelectedScreen() {
+    if (_selectedIndex == 0) {
+      return ListView.builder(
         itemCount: _passwords.length,
         itemBuilder: (context, index) {
           Entry password = _passwords[index];
@@ -123,14 +99,12 @@ class _HomeScreenState extends State<HomeScreen> {
             title: Text(password.title),
             subtitle: Text(password.username),
             onTap: () {
-              // Navigate to the EntryViewScreen when tapped
               Navigator.of(context)
                   .push(
                 MaterialPageRoute(
                   builder: (context) => EntryViewScreen(
-                    entry: password, // Pass the selected entry
-                    dbHelper:
-                        _databaseHelper!, // Pass the database helper for delete/edit actions
+                    entry: password,
+                    dbHelper: _databaseHelper!,
                   ),
                 ),
               )
@@ -148,10 +122,64 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           );
         },
+      );
+    } else if (_selectedIndex == 1) {
+      return PasswordGeneratorScreen(
+        showSaveButton: false,
+      );
+    } else {
+      return Container(); // Empty container for future screens
+    }
+  }
+
+  // Handle bottom navigation bar tap
+  void _onBottomNavTap(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('My Vault'),
+        actions: <Widget>[
+          PopupMenuButton<String>(
+            onSelected: (String result) {
+              if (result == 'Logout') {
+                _logout();
+              }
+            },
+            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+              const PopupMenuItem<String>(
+                value: 'Logout',
+                child: Text('Logout'),
+              ),
+            ],
+          ),
+        ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _addNewEntry,
-        child: const Icon(Icons.add),
+      body: _getSelectedScreen(),
+      floatingActionButton: _selectedIndex == 0
+          ? FloatingActionButton(
+              onPressed: _addNewEntry,
+              child: const Icon(Icons.add),
+            )
+          : null, // Only show FAB on the home screen
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: _onBottomNavTap,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.lock),
+            label: 'My Vault',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.sync),
+            label: 'Generator',
+          ),
+        ],
       ),
     );
   }
