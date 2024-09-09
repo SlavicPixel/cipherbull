@@ -5,9 +5,10 @@ import 'package:cipherbull/models/password_generator.dart'; // Import the transl
 class PasswordGeneratorScreen extends StatefulWidget {
   final bool showSaveButton;
 
-  PasswordGeneratorScreen({this.showSaveButton = true});
+  const PasswordGeneratorScreen({super.key, this.showSaveButton = true});
 
   @override
+  // ignore: library_private_types_in_public_api
   _PasswordGeneratorScreenState createState() =>
       _PasswordGeneratorScreenState();
 }
@@ -23,39 +24,38 @@ class _PasswordGeneratorScreenState extends State<PasswordGeneratorScreen> {
   @override
   void initState() {
     super.initState();
-    _generatePassword(); // Generate a password on load
+    _generatePassword();
   }
 
-  // Function to generate password based on current settings
   void _generatePassword() {
-    PasswordGenerator.clear(); // Clear previous generators
+    PasswordGenerator.clear();
 
-    // Add generators based on toggle settings
     if (_includeUppercase) PasswordGenerator.add(UpperCaseGenerator());
     if (_includeLowercase) PasswordGenerator.add(LowerCaseGenerator());
     if (_includeNumbers) PasswordGenerator.add(NumericGenerator());
     if (_includeSpecialChars) PasswordGenerator.add(SpecialCharGenerator());
 
-    // Ensure at least lowercase is included
     if (PasswordGenerator.isEmpty()) {
       PasswordGenerator.add(LowerCaseGenerator());
       setState(() {
-        _includeLowercase = true; // Force lowercase to be enabled
+        _includeLowercase = true;
       });
     }
 
-    // Generate the password
     setState(() {
       _generatedPassword = PasswordGenerator.generatePassword(_passwordLength);
     });
   }
 
-  // Copy the password to clipboard
   void _copyPassword() {
     Clipboard.setData(ClipboardData(text: _generatedPassword));
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: const Text("Password copied to clipboard")),
+      const SnackBar(content: Text("Password copied to clipboard")),
     );
+  }
+
+  void _savePassword() {
+    Navigator.of(context).pop(_generatedPassword);
   }
 
   @override
@@ -67,7 +67,6 @@ class _PasswordGeneratorScreenState extends State<PasswordGeneratorScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Display the generated password
             Row(
               children: [
                 Expanded(
@@ -82,17 +81,15 @@ class _PasswordGeneratorScreenState extends State<PasswordGeneratorScreen> {
                 ),
                 IconButton(
                   icon: const Icon(Icons.copy),
-                  onPressed: _copyPassword, // Copy password to clipboard
+                  onPressed: _copyPassword,
                 ),
                 IconButton(
                   icon: const Icon(Icons.refresh),
-                  onPressed: _generatePassword, // Refresh the password
+                  onPressed: _generatePassword,
                 ),
               ],
             ),
             const SizedBox(height: 20),
-
-            // Password length slider
             Text("Length: $_passwordLength"),
             Slider(
               value: _passwordLength.toDouble(),
@@ -103,19 +100,17 @@ class _PasswordGeneratorScreenState extends State<PasswordGeneratorScreen> {
               onChanged: (double value) {
                 setState(() {
                   _passwordLength = value.toInt();
-                  _generatePassword(); // Regenerate password when length changes
+                  _generatePassword();
                 });
               },
             ),
-
-            // Toggle switches for password options
             SwitchListTile(
               title: const Text("Uppercase (A-Z)"),
               value: _includeUppercase,
               onChanged: (bool value) {
                 setState(() {
                   _includeUppercase = value;
-                  _generatePassword(); // Regenerate password when toggle changes
+                  _generatePassword();
                 });
               },
             ),
@@ -123,16 +118,15 @@ class _PasswordGeneratorScreenState extends State<PasswordGeneratorScreen> {
               title: const Text("Lowercase (a-z)"),
               value: _includeLowercase,
               onChanged: (bool value) {
-                // Ensure lowercase cannot be disabled if all others are off
                 if (!value &&
                     !_includeUppercase &&
                     !_includeNumbers &&
                     !_includeSpecialChars) {
-                  return; // Do nothing to prevent disabling all
+                  return;
                 }
                 setState(() {
                   _includeLowercase = value;
-                  _generatePassword(); // Regenerate password when toggle changes
+                  _generatePassword();
                 });
               },
             ),
@@ -142,7 +136,7 @@ class _PasswordGeneratorScreenState extends State<PasswordGeneratorScreen> {
               onChanged: (bool value) {
                 setState(() {
                   _includeNumbers = value;
-                  _generatePassword(); // Regenerate password when toggle changes
+                  _generatePassword();
                 });
               },
             ),
@@ -152,18 +146,15 @@ class _PasswordGeneratorScreenState extends State<PasswordGeneratorScreen> {
               onChanged: (bool value) {
                 setState(() {
                   _includeSpecialChars = value;
-                  _generatePassword(); // Regenerate password when toggle changes
+                  _generatePassword();
                 });
               },
             ),
-
             const SizedBox(height: 20),
             if (widget.showSaveButton)
               Center(
                 child: ElevatedButton(
-                  onPressed: () {
-                    // Implement save functionality
-                  },
+                  onPressed: _savePassword,
                   child: const Text("Save Password"),
                 ),
               ),
