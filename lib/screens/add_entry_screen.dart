@@ -2,13 +2,15 @@
 import 'package:flutter/material.dart';
 import 'package:cipherbull/services/database_helper.dart';
 import 'package:cipherbull/models/entry.dart';
+import 'package:cipherbull/screens/password_generator_screen.dart';
 
 class AddEntryScreen extends StatefulWidget {
-  final DatabaseHelper dbHelper; // Pass the DatabaseHelper instance
+  final DatabaseHelper dbHelper;
 
-  AddEntryScreen({required this.dbHelper});
+  const AddEntryScreen({super.key, required this.dbHelper});
 
   @override
+  // ignore: library_private_types_in_public_api
   _AddEntryScreenState createState() => _AddEntryScreenState();
 }
 
@@ -18,8 +20,8 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _urlController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
+  bool _isPasswordVisible = true;
 
-  // Function to handle the save action
   void _saveEntry() async {
     String title = _titleController.text;
     String username = _usernameController.text;
@@ -28,7 +30,6 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
     String notes = _notesController.text;
 
     if (title.isNotEmpty && username.isNotEmpty && password.isNotEmpty) {
-      // Create a new Entry object
       Entry newEntry = Entry(
         title: title,
         username: username,
@@ -37,10 +38,8 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
         notes: notes,
       );
 
-      // Insert the new entry into the database
       await widget.dbHelper.insertEntry(newEntry);
 
-      // Go back to the previous screen after saving
       Navigator.of(context).pop();
     } else {
       _showErrorDialog(
@@ -48,7 +47,22 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
     }
   }
 
-  // Function to show an error dialog if fields are missing
+  void _generatedPassword() {
+    Navigator.of(context)
+        .push(
+      MaterialPageRoute(
+        builder: (context) => const PasswordGeneratorScreen(),
+      ),
+    )
+        .then((result) {
+      if (result != null) {
+        setState(() {
+          _passwordController.text = result;
+        });
+      }
+    });
+  }
+
   void _showErrorDialog(String message) {
     showDialog(
       context: context,
@@ -88,12 +102,34 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                   labelText: 'Username *',
                 ),
               ),
-              TextField(
-                obscureText: true,
-                controller: _passwordController,
-                decoration: const InputDecoration(
-                  labelText: 'Password *', // Hide password text
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      obscureText: _isPasswordVisible,
+                      controller: _passwordController,
+                      decoration: const InputDecoration(
+                        labelText: 'Password *',
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      _isPasswordVisible
+                          ? Icons.visibility
+                          : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _isPasswordVisible = !_isPasswordVisible;
+                      });
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.sync),
+                    onPressed: _generatedPassword,
+                  ),
+                ],
               ),
               TextField(
                 controller: _urlController,

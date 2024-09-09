@@ -2,14 +2,17 @@
 import 'package:flutter/material.dart';
 import 'package:cipherbull/models/entry.dart';
 import 'package:cipherbull/services/database_helper.dart';
+import 'package:cipherbull/screens/password_generator_screen.dart';
 
 class EntryEditScreen extends StatefulWidget {
-  final Entry entry; // The entry to be edited
-  final DatabaseHelper dbHelper; // Database helper to save the updated entry
+  final Entry entry;
+  final DatabaseHelper dbHelper;
 
-  EntryEditScreen({required this.entry, required this.dbHelper});
+  const EntryEditScreen(
+      {super.key, required this.entry, required this.dbHelper});
 
   @override
+  // ignore: library_private_types_in_public_api
   _EntryEditScreenState createState() => _EntryEditScreenState();
 }
 
@@ -19,11 +22,11 @@ class _EntryEditScreenState extends State<EntryEditScreen> {
   late TextEditingController _passwordController;
   late TextEditingController _urlController;
   late TextEditingController _notesController;
+  bool _isPasswordVisible = true;
 
   @override
   void initState() {
     super.initState();
-    // Initialize text controllers with the current values of the entry
     _titleController = TextEditingController(text: widget.entry.title);
     _usernameController = TextEditingController(text: widget.entry.username);
     _passwordController = TextEditingController(text: widget.entry.password);
@@ -31,7 +34,6 @@ class _EntryEditScreenState extends State<EntryEditScreen> {
     _notesController = TextEditingController(text: widget.entry.notes);
   }
 
-  // Function to save the updated entry
   Future<void> _saveEntry() async {
     String updatedTitle = _titleController.text;
     String updatedUsername = _usernameController.text;
@@ -39,13 +41,11 @@ class _EntryEditScreenState extends State<EntryEditScreen> {
     String updatedUrl = _urlController.text;
     String updatedNotes = _notesController.text;
 
-    // Ensure required fields are filled
     if (updatedTitle.isNotEmpty &&
         updatedUsername.isNotEmpty &&
         updatedPassword.isNotEmpty) {
-      // Create a new updated Entry object
       Entry updatedEntry = Entry(
-        id: widget.entry.id, // Keep the same ID
+        id: widget.entry.id,
         title: updatedTitle,
         username: updatedUsername,
         password: updatedPassword,
@@ -53,10 +53,8 @@ class _EntryEditScreenState extends State<EntryEditScreen> {
         notes: updatedNotes,
       );
 
-      // Save the updated entry to the database
       await widget.dbHelper.updateEntry(updatedEntry);
 
-      // Navigate back to the EntryViewScreen with the updated entry
       Navigator.of(context).pop(updatedEntry);
     } else {
       _showErrorDialog(
@@ -64,7 +62,22 @@ class _EntryEditScreenState extends State<EntryEditScreen> {
     }
   }
 
-  // Show error dialog if required fields are missing
+  void _generatedPassword() {
+    Navigator.of(context)
+        .push(
+      MaterialPageRoute(
+        builder: (context) => const PasswordGeneratorScreen(),
+      ),
+    )
+        .then((result) {
+      if (result != null) {
+        setState(() {
+          _passwordController.text = result;
+        });
+      }
+    });
+  }
+
   void _showErrorDialog(String message) {
     showDialog(
       context: context,
@@ -95,8 +108,30 @@ class _EntryEditScreenState extends State<EntryEditScreen> {
             children: [
               _buildEditableField('Title', _titleController),
               _buildEditableField('Username', _usernameController),
-              _buildEditableField('Password', _passwordController,
-                  obscureText: true),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildEditableField('Password', _passwordController,
+                        obscureText: _isPasswordVisible),
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      _isPasswordVisible
+                          ? Icons.visibility
+                          : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _isPasswordVisible = !_isPasswordVisible;
+                      });
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.sync),
+                    onPressed: _generatedPassword,
+                  ),
+                ],
+              ),
               _buildEditableField('URL', _urlController),
               _buildEditableField('Notes', _notesController, maxLines: 5),
             ],
@@ -110,7 +145,6 @@ class _EntryEditScreenState extends State<EntryEditScreen> {
     );
   }
 
-  // Helper function to build editable text fields
   Widget _buildEditableField(String label, TextEditingController controller,
       {bool obscureText = false, int maxLines = 1}) {
     return Column(
