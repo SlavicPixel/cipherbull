@@ -1,4 +1,3 @@
-// lib/screens/add_entry_screen.dart
 import 'package:flutter/material.dart';
 import 'package:cipherbull/services/database_helper.dart';
 import 'package:cipherbull/models/entry.dart';
@@ -6,8 +5,10 @@ import 'package:cipherbull/screens/password_generator_screen.dart';
 
 class AddEntryScreen extends StatefulWidget {
   final DatabaseHelper dbHelper;
+  final bool isDarkMode;
 
-  const AddEntryScreen({super.key, required this.dbHelper});
+  const AddEntryScreen(
+      {super.key, required this.dbHelper, required this.isDarkMode});
 
   @override
   // ignore: library_private_types_in_public_api
@@ -40,7 +41,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
 
       await widget.dbHelper.insertEntry(newEntry);
 
-      Navigator.of(context).pop();
+      if (mounted) Navigator.of(context).pop();
     } else {
       _showErrorDialog(
           'Please fill out all required fields (Title, Username, and Password).');
@@ -81,74 +82,79 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Add New Entry'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              TextField(
-                controller: _titleController,
-                decoration: const InputDecoration(
-                  labelText: 'Title *',
+    return MaterialApp(
+      theme: widget.isDarkMode
+          ? ThemeData.dark(useMaterial3: true)
+          : ThemeData.light(useMaterial3: true),
+      home: Scaffold(
+        appBar: AppBar(
+          title: const Text('Add New Entry'),
+        ),
+        body: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                TextField(
+                  controller: _titleController,
+                  decoration: const InputDecoration(
+                    labelText: 'Title *',
+                  ),
                 ),
-              ),
-              TextField(
-                controller: _usernameController,
-                decoration: const InputDecoration(
-                  labelText: 'Username *',
+                TextField(
+                  controller: _usernameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Username *',
+                  ),
                 ),
-              ),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      obscureText: _isPasswordVisible,
-                      controller: _passwordController,
-                      decoration: const InputDecoration(
-                        labelText: 'Password *',
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        obscureText: _isPasswordVisible,
+                        controller: _passwordController,
+                        decoration: const InputDecoration(
+                          labelText: 'Password *',
+                        ),
                       ),
                     ),
-                  ),
-                  IconButton(
-                    icon: Icon(
-                      _isPasswordVisible
-                          ? Icons.visibility
-                          : Icons.visibility_off,
+                    IconButton(
+                      icon: Icon(
+                        _isPasswordVisible
+                            ? Icons.visibility
+                            : Icons.visibility_off,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _isPasswordVisible = !_isPasswordVisible;
+                        });
+                      },
                     ),
-                    onPressed: () {
-                      setState(() {
-                        _isPasswordVisible = !_isPasswordVisible;
-                      });
-                    },
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.sync),
-                    onPressed: _generatedPassword,
-                  ),
-                ],
-              ),
-              TextField(
-                controller: _urlController,
-                decoration: const InputDecoration(
-                  labelText: 'URL',
+                    IconButton(
+                      icon: const Icon(Icons.sync),
+                      onPressed: _generatedPassword,
+                    ),
+                  ],
                 ),
-              ),
-              TextField(
-                controller: _notesController,
-                decoration: const InputDecoration(
-                  labelText: 'Notes',
+                TextField(
+                  controller: _urlController,
+                  decoration: const InputDecoration(
+                    labelText: 'URL',
+                  ),
                 ),
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _saveEntry,
-                child: const Text('Save Entry'),
-              ),
-            ],
+                TextField(
+                  controller: _notesController,
+                  decoration: const InputDecoration(
+                    labelText: 'Notes',
+                  ),
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: _saveEntry,
+                  child: const Text('Save Entry'),
+                ),
+              ],
+            ),
           ),
         ),
       ),

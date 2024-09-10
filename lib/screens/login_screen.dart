@@ -1,4 +1,3 @@
-// lib/screens/login_screen.dart
 import 'package:flutter/material.dart';
 import 'package:cipherbull/services/secure_storage_helper.dart';
 import 'package:cipherbull/services/database_helper.dart';
@@ -18,6 +17,20 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final SecureStorageService _secureStorageService = SecureStorageService();
   bool _isPasswordVisible = true;
+  bool _isDarkMode = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadThemePreference();
+  }
+
+  Future<void> _loadThemePreference() async {
+    bool isDarkMode = await _secureStorageService.loadThemePreference();
+    setState(() {
+      _isDarkMode = isDarkMode;
+    });
+  }
 
   void _login() async {
     String dbName = _usernameController.text;
@@ -76,59 +89,64 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('CipherBull')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text(
-              "Sign In",
-              style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
-            ),
-            TextField(
-              controller: _usernameController,
-              decoration: const InputDecoration(labelText: 'Username'),
-            ),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    obscureText: _isPasswordVisible,
-                    controller: _passwordController,
-                    decoration: const InputDecoration(
-                      labelText: 'Password *',
+    return MaterialApp(
+      theme: _isDarkMode
+          ? ThemeData.dark(useMaterial3: true)
+          : ThemeData.light(useMaterial3: true),
+      home: Scaffold(
+        appBar: AppBar(title: const Text('CipherBull')),
+        body: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text(
+                "Sign In",
+                style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
+              ),
+              TextField(
+                controller: _usernameController,
+                decoration: const InputDecoration(labelText: 'Username'),
+              ),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      obscureText: _isPasswordVisible,
+                      controller: _passwordController,
+                      decoration: const InputDecoration(
+                        labelText: 'Password *',
+                      ),
                     ),
                   ),
-                ),
-                IconButton(
-                  icon: Icon(
-                    _isPasswordVisible
-                        ? Icons.visibility
-                        : Icons.visibility_off,
+                  IconButton(
+                    icon: Icon(
+                      _isPasswordVisible
+                          ? Icons.visibility
+                          : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _isPasswordVisible = !_isPasswordVisible;
+                      });
+                    },
                   ),
-                  onPressed: () {
-                    setState(() {
-                      _isPasswordVisible = !_isPasswordVisible;
-                    });
-                  },
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _login,
-              child: const Text('Login'),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(top: 30, bottom: 5),
-              child: ElevatedButton(
-                onPressed: _createVault,
-                child: const Text('Create new vault'),
+                ],
               ),
-            ),
-          ],
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: _login,
+                child: const Text('Login'),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(top: 30, bottom: 5),
+                child: ElevatedButton(
+                  onPressed: _createVault,
+                  child: const Text('Create new vault'),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
