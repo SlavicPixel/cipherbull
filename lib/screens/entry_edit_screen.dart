@@ -1,4 +1,3 @@
-// lib/screens/entry_edit_screen.dart
 import 'package:flutter/material.dart';
 import 'package:cipherbull/models/entry.dart';
 import 'package:cipherbull/services/database_helper.dart';
@@ -55,7 +54,7 @@ class _EntryEditScreenState extends State<EntryEditScreen> {
 
       await widget.dbHelper.updateEntry(updatedEntry);
 
-      Navigator.of(context).pop(updatedEntry);
+      if (mounted) Navigator.of(context).pop(updatedEntry);
     } else {
       _showErrorDialog(
           'Please fill out all required fields (Title, Username, and Password).');

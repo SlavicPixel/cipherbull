@@ -1,4 +1,3 @@
-// lib/screens/entry_view_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cipherbull/models/entry.dart';
@@ -7,26 +6,24 @@ import 'package:cipherbull/screens/entry_edit_screen.dart';
 
 //ignore: must_be_immutable
 class EntryViewScreen extends StatefulWidget {
-  Entry entry; // The entry to display
-  final DatabaseHelper dbHelper; // Database helper to delete or edit the entry
+  Entry entry;
+  final DatabaseHelper dbHelper;
 
-  EntryViewScreen({required this.entry, required this.dbHelper});
+  EntryViewScreen({super.key, required this.entry, required this.dbHelper});
 
   @override
+  // ignore: library_private_types_in_public_api
   _EntryViewScreenState createState() => _EntryViewScreenState();
 }
 
 class _EntryViewScreenState extends State<EntryViewScreen> {
-  bool _isPasswordVisible = false; // To toggle password visibility
+  bool _isPasswordVisible = false;
 
-  // Function to handle the deletion of the entry
   Future<void> _deleteEntry() async {
     await widget.dbHelper.deleteEntry(widget.entry.id!);
-    Navigator.of(context)
-        .pop(true); // Return to the previous screen after deletion
+    if (mounted) Navigator.of(context).pop(true);
   }
 
-  // Show confirmation dialog before deletion
   void _confirmDelete() {
     showDialog(
       context: context,
@@ -40,8 +37,8 @@ class _EntryViewScreenState extends State<EntryViewScreen> {
           ),
           TextButton(
             onPressed: () {
-              Navigator.of(context).pop(); // Close the dialog
-              _deleteEntry(); // Delete the entry
+              Navigator.of(context).pop();
+              _deleteEntry();
             },
             child: const Text('Delete'),
           ),
@@ -51,17 +48,15 @@ class _EntryViewScreenState extends State<EntryViewScreen> {
   }
 
   void _editEntry() async {
-    // Navigate to the EntryEditScreen and wait for the result
     final updatedEntry = await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => EntryEditScreen(
-          entry: widget.entry, // Pass the current entry to be edited
-          dbHelper: widget.dbHelper, // Pass the database helper
+          entry: widget.entry,
+          dbHelper: widget.dbHelper,
         ),
       ),
     );
 
-    // If an updated entry is returned, update the UI
     if (updatedEntry != null) {
       setState(() {
         widget.entry = updatedEntry;
@@ -113,7 +108,6 @@ class _EntryViewScreenState extends State<EntryViewScreen> {
     );
   }
 
-  // Helper function to display entry details
   Widget _buildDetailItem(String label, String value,
       {bool isCopyable = false}) {
     return Column(
@@ -141,7 +135,6 @@ class _EntryViewScreenState extends State<EntryViewScreen> {
     );
   }
 
-  // Helper function to display the password with visibility toggle
   Widget _buildPasswordField(String label, String value) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -155,7 +148,7 @@ class _EntryViewScreenState extends State<EntryViewScreen> {
             Expanded(
               child: TextField(
                 controller: TextEditingController(text: value),
-                obscureText: !_isPasswordVisible, // Toggle visibility
+                obscureText: !_isPasswordVisible,
                 readOnly: true,
                 decoration: const InputDecoration(border: InputBorder.none),
                 style: const TextStyle(fontSize: 18),
@@ -179,7 +172,6 @@ class _EntryViewScreenState extends State<EntryViewScreen> {
     );
   }
 
-  // Helper function to build a copy button
   Widget _buildCopyIcon(String value) {
     return IconButton(
       icon: const Icon(Icons.copy),

@@ -23,16 +23,14 @@ class DatabaseHelper {
       final directory = await getApplicationDocumentsDirectory();
       String path = join(directory.path, '$dbName.db');
 
-      // Attempt to open the database
       return await openDatabase(
         path,
         version: 1,
         onCreate: _onCreate,
-        password: dbPassword, // SQLCipher password
+        password: dbPassword,
       );
     } on DatabaseException catch (e) {
       if (e.isOpenFailedError()) {
-        // Handle incorrect password scenario here
         log("Incorrect password provided for database.");
       }
       rethrow;
