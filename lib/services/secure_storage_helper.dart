@@ -23,4 +23,13 @@ class SecureStorageService {
     await _secureStorage.delete(key: 'db_password');
     await _secureStorage.delete(key: 'db_name');
   }
+
+  Future<void> saveThemePreference(bool isDarkMode) async {
+    await _secureStorage.write(key: 'isDarkMode', value: isDarkMode.toString());
+  }
+
+  Future<bool> loadThemePreference() async {
+    String? isDarkModeStr = await _secureStorage.read(key: 'isDarkMode');
+    return isDarkModeStr == 'true';
+  }
 }
