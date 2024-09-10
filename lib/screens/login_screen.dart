@@ -17,6 +17,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final SecureStorageService _secureStorageService = SecureStorageService();
+  bool _isPasswordVisible = true;
 
   void _login() async {
     String dbName = _usernameController.text;
@@ -90,10 +91,30 @@ class _LoginScreenState extends State<LoginScreen> {
               controller: _usernameController,
               decoration: const InputDecoration(labelText: 'Username'),
             ),
-            TextField(
-              controller: _passwordController,
-              decoration: const InputDecoration(labelText: 'Password'),
-              obscureText: true,
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    obscureText: _isPasswordVisible,
+                    controller: _passwordController,
+                    decoration: const InputDecoration(
+                      labelText: 'Password *',
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(
+                    _isPasswordVisible
+                        ? Icons.visibility
+                        : Icons.visibility_off,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _isPasswordVisible = !_isPasswordVisible;
+                    });
+                  },
+                ),
+              ],
             ),
             const SizedBox(height: 20),
             ElevatedButton(
