@@ -5,12 +5,13 @@ import 'package:cipherbull/services/secure_storage_helper.dart';
 import 'package:cipherbull/screens/add_entry_screen.dart';
 import 'package:cipherbull/screens/login_screen.dart';
 import 'package:cipherbull/screens/entry_view_screen.dart';
-import 'package:cipherbull/screens/password_generator_screen.dart'; // Import the Password Generator Screen
+import 'package:cipherbull/screens/password_generator_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
+  // ignore: library_private_types_in_public_api
   _HomeScreenState createState() => _HomeScreenState();
 }
 
@@ -20,14 +21,26 @@ class _HomeScreenState extends State<HomeScreen> {
   DatabaseHelper? _databaseHelper;
 
   int _selectedIndex = 0;
+  bool _isDarkMode = false;
 
   @override
   void initState() {
     super.initState();
     _initializeDatabaseHelper();
+    _loadThemePreference();
   }
 
-  // Initialize the DatabaseHelper globally
+  Future<void> _loadThemePreference() async {
+    bool isDarkMode = await _secureStorageService.loadThemePreference();
+    setState(() {
+      _isDarkMode = isDarkMode;
+    });
+  }
+
+  Future<void> _saveThemePreference(bool isDarkMode) async {
+    await _secureStorageService.saveThemePreference(isDarkMode);
+  }
+
   Future<void> _initializeDatabaseHelper() async {
     String? dbName = await _secureStorageService.getDatabaseName();
     String? dbPassword = await _secureStorageService.getDatabasePassword();
@@ -56,11 +69,43 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _showDeleteConfirmationDialog(int id) async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Delete Entry'),
+          content: const Text(
+              'Are you sure you want to delete this entry? This action cannot be undone.'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: const Text('Delete'),
+              onPressed: () {
+                _deletePassword(id);
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _addNewEntry() {
     Navigator.of(context)
         .push(
           MaterialPageRoute(
-            builder: (context) => AddEntryScreen(dbHelper: _databaseHelper!),
+            builder: (context) => AddEntryScreen(
+              dbHelper: _databaseHelper!,
+              isDarkMode: _isDarkMode,
+            ),
           ),
         )
         .then((_) => _loadPasswords());
@@ -68,9 +113,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _logout() async {
     await _secureStorageService.clearCredentials();
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (context) => LoginScreen()),
-    );
+    await _databaseHelper?.closeDatabase();
+    if (mounted) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+      );
+    }
   }
 
   void _showErrorDialog(String message) {
@@ -91,40 +139,49 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _getSelectedScreen() {
     if (_selectedIndex == 0) {
-      return ListView.builder(
-        itemCount: _passwords.length,
-        itemBuilder: (context, index) {
-          Entry password = _passwords[index];
-          return ListTile(
-            title: Text(password.title),
-            subtitle: Text(password.username),
-            onTap: () {
-              Navigator.of(context)
-                  .push(
-                MaterialPageRoute(
-                  builder: (context) => EntryViewScreen(
-                    entry: password,
-                    dbHelper: _databaseHelper!,
+      if (_passwords.isEmpty) {
+        return const Center(
+          child: Text(
+            'There are no items in your vault.',
+            style: TextStyle(fontSize: 18),
+          ),
+        );
+      } else {
+        return ListView.builder(
+          itemCount: _passwords.length,
+          itemBuilder: (context, index) {
+            Entry password = _passwords[index];
+            return ListTile(
+              title: Text(password.title),
+              subtitle: Text(password.username),
+              onTap: () {
+                Navigator.of(context)
+                    .push(
+                  MaterialPageRoute(
+                    builder: (context) => EntryViewScreen(
+                      entry: password,
+                      dbHelper: _databaseHelper!,
+                    ),
                   ),
-                ),
-              )
-                  .then((value) {
-                setState(() {
-                  _loadPasswords();
+                )
+                    .then((value) {
+                  setState(() {
+                    _loadPasswords();
+                  });
                 });
-              });
-            },
-            trailing: IconButton(
-              icon: const Icon(Icons.delete),
-              onPressed: () {
-                _deletePassword(password.id!);
               },
-            ),
-          );
-        },
-      );
+              trailing: IconButton(
+                icon: const Icon(Icons.delete),
+                onPressed: () {
+                  _showDeleteConfirmationDialog(password.id!);
+                },
+              ),
+            );
+          },
+        );
+      }
     } else if (_selectedIndex == 1) {
-      return PasswordGeneratorScreen(
+      return const PasswordGeneratorScreen(
         showSaveButton: false,
       );
     } else {
@@ -132,7 +189,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // Handle bottom navigation bar tap
   void _onBottomNavTap(int index) {
     setState(() {
       _selectedIndex = index;
@@ -141,45 +197,61 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('My Vault'),
-        actions: <Widget>[
-          PopupMenuButton<String>(
-            onSelected: (String result) {
-              if (result == 'Logout') {
-                _logout();
-              }
-            },
-            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-              const PopupMenuItem<String>(
-                value: 'Logout',
-                child: Text('Logout'),
-              ),
-            ],
-          ),
-        ],
-      ),
-      body: _getSelectedScreen(),
-      floatingActionButton: _selectedIndex == 0
-          ? FloatingActionButton(
-              onPressed: _addNewEntry,
-              child: const Icon(Icons.add),
-            )
-          : null, // Only show FAB on the home screen
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: _onBottomNavTap,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.lock),
-            label: 'My Vault',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.sync),
-            label: 'Generator',
-          ),
-        ],
+    return MaterialApp(
+      theme: _isDarkMode
+          ? ThemeData.dark(useMaterial3: true)
+          : ThemeData.light(useMaterial3: true),
+      home: Scaffold(
+        appBar: AppBar(
+          title: const Text('My Vault'),
+          actions: <Widget>[
+            PopupMenuButton<String>(
+              onSelected: (String result) {
+                if (result == 'Logout') {
+                  _logout();
+                } else if (result == 'Toggle Theme') {
+                  setState(() {
+                    _isDarkMode = !_isDarkMode;
+                    _saveThemePreference(_isDarkMode);
+                  });
+                }
+              },
+              itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                PopupMenuItem<String>(
+                  value: 'Toggle Theme',
+                  child: Text(_isDarkMode
+                      ? 'Switch to Light Mode'
+                      : 'Switch to Dark Mode'),
+                ),
+                const PopupMenuItem<String>(
+                  value: 'Logout',
+                  child: Text('Logout'),
+                ),
+              ],
+            ),
+          ],
+        ),
+        body: _getSelectedScreen(),
+        floatingActionButton: _selectedIndex == 0
+            ? FloatingActionButton(
+                onPressed: _addNewEntry,
+                child: const Icon(Icons.add),
+              )
+            : null, // Only show FAB on the home screen
+        bottomNavigationBar: BottomNavigationBar(
+          currentIndex: _selectedIndex,
+          onTap: _onBottomNavTap,
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.lock),
+              label: 'My Vault',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.sync),
+              label: 'Generator',
+            ),
+          ],
+        ),
       ),
     );
   }
