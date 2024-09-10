@@ -1,7 +1,9 @@
 import 'package:sqflite_sqlcipher/sqflite.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart';
+import 'dart:io';
 import '../models/entry.dart';
+import 'dart:developer';
 
 class DatabaseHelper {
   Database? _database;
@@ -17,16 +19,27 @@ class DatabaseHelper {
   }
 
   Future<Database> _initDb() async {
-    final directory = await getApplicationDocumentsDirectory();
+    try {
+      final directory = await getApplicationDocumentsDirectory();
+      String path = join(directory.path, '$dbName.db');
 
-    String path = join(directory.path, '$dbName.db');
-
-    return await openDatabase(
-      path,
-      version: 1,
-      onCreate: _onCreate,
-      password: dbPassword,
-    );
+      // Attempt to open the database
+      return await openDatabase(
+        path,
+        version: 1,
+        onCreate: _onCreate,
+        password: dbPassword, // SQLCipher password
+      );
+    } on DatabaseException catch (e) {
+      if (e.isOpenFailedError()) {
+        // Handle incorrect password scenario here
+        log("Incorrect password provided for database.");
+      }
+      rethrow;
+    } catch (e) {
+      log('General Exception: ${e.toString()}');
+      rethrow;
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -62,5 +75,24 @@ class DatabaseHelper {
   Future<int> deleteEntry(int id) async {
     Database db = await database;
     return await db.delete('entries', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> closeDatabase() async {
+    if (_database != null) {
+      await _database!.close();
+      _database = null;
+    }
+  }
+
+  Future<bool> checkDatabaseExists() async {
+    try {
+      final directory = await getApplicationDocumentsDirectory();
+      String dbPath = join(directory.path, '$dbName.db');
+
+      return File(dbPath).exists();
+    } catch (e) {
+      log('Error checking for database existence: $e');
+      return false;
+    }
   }
 }
